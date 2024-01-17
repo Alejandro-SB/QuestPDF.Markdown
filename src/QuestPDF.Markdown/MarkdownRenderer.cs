@@ -1,3 +1,5 @@
+using CSharpMath.SkiaSharp;
+using Markdig.Extensions.Mathematics;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
@@ -5,6 +7,7 @@ using Markdig.Syntax.Inlines;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using SkiaSharp;
 
 namespace QuestPDF.Markdown;
 
@@ -54,8 +57,8 @@ internal sealed class MarkdownRenderer : IComponent
     {
         if (block.Count == 0) return pdf;
 
-        if(_options.Debug && block is not MarkdownDocument) pdf = pdf.PaddedDebugArea(block.GetType().Name, Colors.Blue.Medium);
-        
+        if (_options.Debug && block is not MarkdownDocument) pdf = pdf.PaddedDebugArea(block.GetType().Name, Colors.Blue.Medium);
+
         // Push any styles that should be applied to the entire container on the stack
         switch (block)
         {
@@ -97,7 +100,7 @@ internal sealed class MarkdownRenderer : IComponent
                 }
             });
         }
-        
+
         // Pop any styles that were applied to the entire container off the stack
         switch (block)
         {
@@ -115,7 +118,7 @@ internal sealed class MarkdownRenderer : IComponent
         {
             td.ColumnsDefinition(cd =>
             {
-                foreach(var col in table.ColumnDefinitions)
+                foreach (var col in table.ColumnDefinitions)
                 {
                     // Width is set to 0 for relative columns
                     if (col.Width > 0)
@@ -134,7 +137,7 @@ internal sealed class MarkdownRenderer : IComponent
             foreach (var row in rows)
             {
                 if (row.IsHeader) _textProperties.TextStyles.Push(t => t.Bold());
-                
+
                 var colIdx = 0;
                 var cells = row.OfType<TableCell>().ToList();
                 foreach (var cell in cells)
@@ -149,7 +152,7 @@ internal sealed class MarkdownRenderer : IComponent
                         .BorderColor(_options.TableBorderColor)
                         .Background(rowIdx % 2 == 0 ? _options.TableEvenRowBackgroundColor : _options.TableOddRowBackgroundColor)
                         .Padding(5);
-                    
+
                     switch (colDef.Alignment)
                     {
                         case TableColumnAlign.Left:
@@ -162,14 +165,14 @@ internal sealed class MarkdownRenderer : IComponent
                             container = container.AlignRight();
                             break;
                     }
-                    
+
                     ProcessBlock(cell, container);
 
                     colIdx++;
                 }
-                
+
                 if (row.IsHeader) _textProperties.TextStyles.Pop();
-                
+
                 rowIdx++;
             }
         });
@@ -183,8 +186,8 @@ internal sealed class MarkdownRenderer : IComponent
     /// </summary>
     private void ProcessLeafBlock(LeafBlock block, IContainer pdf)
     {
-        if(_options.Debug) pdf = pdf.PaddedDebugArea(block.GetType().Name, Colors.Red.Medium);
-        
+        if (_options.Debug) pdf = pdf.PaddedDebugArea(block.GetType().Name, Colors.Red.Medium);
+
         // Push any styles that should be applied to the entire block on the stack
         switch (block)
         {
@@ -217,6 +220,29 @@ internal sealed class MarkdownRenderer : IComponent
             pdf.LineHorizontal(_options.HorizontalRuleThickness)
                 .LineColor(_options.HorizontalRuleColor);
         }
+        else if (block is MathBlock math)
+        {
+            var painter = new MathPainter
+            {
+                LaTeX = math.Lines.ToString(),
+                FontSize = 12f
+            };
+
+            var measure = painter.Measure().Size;
+
+            pdf.Container().Element(element =>
+            {
+                element
+                .AlignMiddle()
+                .AlignLeft()
+                .Height(measure.Height - 15)
+                .Width(measure.Width)
+                .Canvas((canvas, size) =>
+                {
+                    painter.Draw(canvas, new SKPoint(0, 30));
+                });
+            });
+        }
         else if (block is CodeBlock code)
         {
             pdf.Background(_options.CodeBlockBackground)
@@ -225,7 +251,6 @@ internal sealed class MarkdownRenderer : IComponent
                 .FontFamily(_options.CodeFont);
         }
 
-        
         // Pop any styles that were applied to the entire block off the stack
         switch (block)
         {
@@ -313,7 +338,7 @@ internal sealed class MarkdownRenderer : IComponent
                 // Ignore markdown line breaks, they are used for formatting the source code.
                 //span = text.Span("\n");
                 break;
-            case TaskList task: 
+            case TaskList task:
                 text.Span(task.Checked ? _options.TaskListCheckedGlyph : _options.TaskListUncheckedGlyph)
                     .FontFamily(_options.UnicodeGlyphFont);
                 break;
@@ -325,6 +350,25 @@ internal sealed class MarkdownRenderer : IComponent
                 text.Span(code.Content)
                     .BackgroundColor(_options.CodeInlineBackground)
                     .FontFamily(_options.CodeFont);
+                break;
+            case MathInline math:
+                text.Element(element =>
+                {
+                    var painter = new MathPainter
+                    {
+                        LaTeX = math.Content.ToString(),
+                        FontSize = 12f
+                    };
+
+                    var measure = painter.Measure().Size;
+
+                    element.Height(measure.Height - 15)
+                        .Width(measure.Width)
+                        .Canvas((canvas, size) =>
+                        {
+                            painter.Draw(canvas, new SKPoint(0, 0));
+                        });
+                });
                 break;
             default:
                 text.Span($"Unknown LeafInline: {inline.GetType()}").BackgroundColor(Colors.Orange.Medium);
@@ -348,13 +392,13 @@ internal sealed class MarkdownRenderer : IComponent
             .Image(image.Image)
             .FitArea()
         );
- 
+
         return text.Span(string.Empty);
     }
-    
+
     internal static MarkdownRenderer Create(string markdownText, MarkdownRendererOptions? options = null) =>
         new(ParsedMarkdownDocument.FromText(markdownText), options);
-    
+
     internal static MarkdownRenderer Create(ParsedMarkdownDocument document, MarkdownRendererOptions? options = null) =>
         new(document, options);
 }

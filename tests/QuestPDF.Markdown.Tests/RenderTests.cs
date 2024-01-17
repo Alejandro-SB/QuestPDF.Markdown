@@ -70,7 +70,43 @@ public class RenderTests
             // Ignore
         }
     }
-    
+
+    [Test]
+    public async Task RenderEquations()
+    {
+        var options = new MarkdownRendererOptions { Debug = true };
+
+        var singleMd = @"If $u = u(x)$ and $du = u'(x)dx$, while $v=v(x)$ and
+        $dv = v'(x)\:dx$, then integration by parts states that:
+
+$$
+        \begin{array}{rcl}
+            \int^b_au(x)v'(x)\:dx &=& \left[ u(x)v(x) \right]^b_a - \int^b_a u'(x)v(x)\:dx \\
+                                  &=& u(b)v(b) - u(a)v(a) - \int^b_a u'(x)v(x)\:dx
+        \end{array}
+$$
+
+or more compactly: $[\int u\:dv = uv - \int v \:du.]$
+
+
+If $u = u(x)$ and $du = u'(x)dx$, while $v=v(x)$ and
+        $dv = v'(x)\:dx$, then integration by parts states that:
+
+$$
+        \begin{array}{rcl}
+            \int^b_au(x)v'(x)\:dx &=& \left[ u(x)v(x) \right]^b_a - \int^b_a u'(x)v(x)\:dx \\
+                                  &=& u(b)v(b) - u(a)v(a) - \int^b_a u'(x)v(x)\:dx
+        \end{array}
+$$
+
+or more compactly: $[\int u\:dv = uv - \int v \:du.]$";
+        var markdown = ParsedMarkdownDocument.FromText(singleMd);
+
+        var document = GenerateDocument(item => item.Markdown(markdown, options));
+        await document.ShowInPreviewerAsync().ConfigureAwait(true);
+
+    }
+
     private static Document GenerateDocument(Action<IContainer> body)
     {
         return Document.Create(container =>

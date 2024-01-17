@@ -19,14 +19,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Markdig" Version="0.34.0"/>
-        <PackageReference Include="QuestPDF" Version="2023.12.1" />
-        <PackageReference Include="SkiaSharp" Version="2.88.6" />
+        <PackageReference Include="CSharpMath.SkiaSharp" Version="0.5.1" />
+        <PackageReference Include="Markdig" Version="0.34.0" />
+        <PackageReference Include="QuestPDF" Version="2023.12.2" />
+        <PackageReference Include="SkiaSharp" Version="2.88.7" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="../../LICENSE" Pack="true" PackagePath=""/>
-        <None Include="../../README.md" Pack="true" PackagePath=""/>
-        <None Include="../../img/logo.png" Pack="true" PackagePath=""/>
+        <None Include="../../LICENSE" Pack="true" PackagePath="" />
+        <None Include="../../README.md" Pack="true" PackagePath="" />
+        <None Include="../../img/logo.png" Pack="true" PackagePath="" />
     </ItemGroup>
 </Project>

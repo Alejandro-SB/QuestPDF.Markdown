@@ -28,6 +28,7 @@ public class ParsedMarkdownDocument
             .UsePipeTables()
             .UseTaskLists()
             .UseAutoLinks()
+            .UseMathematics()
             .Build();
         
         _document = Markdig.Markdown.Parse(markdownText, pipeline);
